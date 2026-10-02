@@ -26,7 +26,7 @@ const businessSchema = new mongoose.Schema({
         required: true,
         trim: true,
     },
-});
+}, { timestamps: true });
 
 businessSchema.pre("save", async function () {
     if (this.isModified("name") || this.isModified("streetAddress") || this.isModified("city") || this.isModified("state") || this.isModified("zip")) {

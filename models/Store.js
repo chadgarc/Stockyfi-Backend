@@ -32,8 +32,9 @@ const storeSchema = new mongoose.Schema({
         default: Business.zip,
         trim: true,
     },
-});
+}, { timestamps: true });
 
+// Trim the store's name, street address, city, state, and zip before saving it to the database
 storeSchema.pre("save", async function () {
     if (this.isModified("name") || this.isModified("streetAddress") || this.isModified("city") || this.isModified("state") || this.isModified("zip")) {
         this.name = this.name.trim();
