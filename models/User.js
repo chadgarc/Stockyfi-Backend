@@ -21,12 +21,21 @@ const userSchema = new mongoose.Schema({
     storeId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Store",
+        required: function () {
+            // Only require storeId if the user is not the owner
+            return this.role !== "owner";
+        },
+    },
+    role: {
+        type: String,
         required: true,
+        enum: ["owner", "manager", "associate"],
+        default: "associate",
     },
 }, { timestamps: true } );
 
 // Hash the user's password before saving it to the database, check if the store exists, and trim the user's name and email before saving it to the database
-userSchema.pre("save", async function (req, res) {
+userSchema.pre("save", async function () {
     // If the user's password has been modified, hash it
     if (this.isModified("password")) {
         const saltRounds = 10;
@@ -34,17 +43,14 @@ userSchema.pre("save", async function (req, res) {
         this.password = hashedPassword;
     }
 
-    // If the user's storeId has been modified, check if it exists and if not, create it
-    if (this.isModified("storeId")) {
-        const store = await Store.findById(this.storeId);
-        if (!store) return res.status(400).json({ success: false, message: "Store not found", });
-        this.storeId = store._id;
-    }
+    // If the user's role is owner, set storeId to null
+    if(this.role === "owner") this.storeId = null;
 
-    // If name or email are modified
-    if(this.isModified("name") || this.isModified("email")) {
-        this.name = this.name.trim();
-        this.email = this.email.trim();
+    // If the user's storeId has been modified, check if it exists and if not, create it
+    if (this.isModified("storeId") && this.role !== "owner") {
+        const store = await Store.findById(this.storeId);
+        if (!store) throw new Error("Store not found");
+        this.storeId = store._id;
     }
 });
 
