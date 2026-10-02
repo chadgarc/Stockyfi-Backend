@@ -2,7 +2,7 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-// Import connection to MongoDB
+// Import connection to MongoDB by side effect so the connection is established when the server starts
 import "./config/connection.js";
 
 import express from "express";
