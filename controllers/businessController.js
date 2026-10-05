@@ -32,7 +32,8 @@ export const updateBusiness = async (req, res) => {
         // only owner can update the business information
         if(req.user.role !== validRoles[0]) return res.status(403).json({message: 'Not authorized to update business information'});
 
-        const business = await Business.findOneAndUpdate(
+        // {} is to find the first business since we only have one
+        const business = await Business.findOneAndUpdate( {},
             { name, streetAddress, city, state, zip, phone },
             { new: true, runValidators: true }
         );
