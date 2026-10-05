@@ -14,7 +14,7 @@ const jurisdiction = (req, res, next) => {
 
     // if the storeId in the token does not match the storeId in the request, return 403 forbidden
     if(req.user.storeId.toString() !== req.params.storeId) return res.status(403).json({message:'Forbidden store'});
-
+    
     next();
 }
 
