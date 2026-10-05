@@ -1,9 +1,9 @@
 import { Router } from "express";
-import { createStore } from "../controllers/store.js";
+import { createStore } from "../controllers/storeController.js";
 import { protect } from "../middleware/auth.js";
-import { getStores } from "../controllers/store.js";
+import { getStores } from "../controllers/storeController.js";
 import jurisdiction from "../middleware/jurisdiction.js";
-import { createItem, updateItem, getItem, getItems, deleteItem} from "../controllers/items.js";
+import { createItem, updateItem, getItem, getItems, deleteItem} from "../controllers/itemsController.js";
 
 const router = Router();
 
