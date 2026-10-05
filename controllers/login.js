@@ -1,3 +1,5 @@
+import User from "../models/User.js";
+import { generateToken } from "../middleware/auth.js";
 
 export const login = async (req, res) => {
     try{
@@ -19,6 +21,6 @@ export const login = async (req, res) => {
     }
     catch (error){
         console.error('Error in login middleware:', error);
-        res.status(500).json({message: 'Failed to login'});
+        res.status(401).json({message: 'Invalid credentials'});
     }
 }

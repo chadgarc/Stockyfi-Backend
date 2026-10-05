@@ -19,7 +19,7 @@ Env: `PORT, MONGO_URI, JWT_SECRET`.
 
 ## 4. Auth / First-Run
 
-- `POST /api/auth/setup-owner {name, streetAddress, city, state, zip, ownerName, email, password}` → creates Business + owner role, storeId=null. If owner count>0 → 403 locked.
+- `POST /api/auth/setup {name, streetAddress, city, state, zip, ownerName, email, password}` → creates Business + owner role, storeId=null. If owner count>0 → 403 locked.
 - `POST /api/auth/login` → JWT.
 - `POST /api/auth/register` → auth required. Owner can create owner|manager|associate any store (null if owner). Manager can create manager|associate only own store (force storeId from token, ignore body). Associate cannot access. No public signup.
 
