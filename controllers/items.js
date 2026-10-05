@@ -102,6 +102,12 @@ export const getItem = async(req, res) => {
         const item = await Item.findById(itemId);
 
         if(!item) return res.status(404).json({message: 'Item not found'});
+
+        // verify item belongs to this store
+        if(item.storeId.toString() !== storeId) return res.status(404).json({message: 'Item not found in this store'});
+
+        // if upc query provided, verify it matches
+        if(req.query.upc && item.upc !== req.query.upc) return res.status(404).json({message: 'Item UPC mismatch'});
         
         res.status(200).json(item);
     } catch(error){
@@ -124,7 +130,13 @@ export const getItems = async(req, res) => {
         // employees cannot get items from a different store, but the owner can get items from all stores
         if( userStoreId !== storeId && userRole !== validRoles[0] ) return res.status(403).json({message: 'Not authorized to get items from this store'});
 
-        // get items
+        // get items - if upc query provided, return single match
+        if(req.query.upc){
+            const single = await Item.findOne({storeId, upc: req.query.upc});
+            if(!single) return res.status(404).json({message: 'Item not found'});
+            return res.status(200).json(single);
+        }
+
         const items = await Item.find({storeId});
         res.status(200).json(items);
     } catch(error){
@@ -132,3 +144,67 @@ export const getItems = async(req, res) => {
         res.status(400).json({message: 'Failed to get items'});
     }
 }
+
+/**
+ * DELETE /api/stores/:storeId/items/:itemId | DELETE /api/stores/:storeId/items?upc= | ?all=true
+ * - Por :itemId: borra 1 por _id (verifica que pertenezca a :storeId).
+ * - Por ?upc=: borra 1 por UPC dentro de :storeId (índice compuesto {storeId,upc}).
+ * - Por ?all=true: borra todos los items de :storeId (cascada para deleteStore).
+ * Solo owner|manager. Requiere protect+jurisdiction.
+ */
+export const deleteItem = async (req, res) => {
+    try{
+        const {storeId, itemId} = req.params;
+
+        // get user role and storeId from request (from protect middleware)
+        const userRole = req.user.role.toString();
+        const userStoreId = req.user.role === validRoles[0] ? null : req.user.storeId.toString();
+
+        // validate role
+        if(!validRoles.includes(userRole)) return res.status(400).json({message: 'Invalid role'});
+
+        // only owner|manager can delete
+        if(userRole !== validRoles[0] && userRole !== validRoles[1]) return res.status(403).json({message: 'Not authorized to delete items'});
+
+        // employees cannot delete items from a different store, but the owner can delete items from all stores
+        if( userStoreId !== storeId && userRole !== validRoles[0] ) return res.status(403).json({message: 'Not authorized to delete items from this store'});
+
+        // delete by upc query: DELETE /:storeId/items?upc=123
+        if(req.query.upc){
+            const byUpc = await Item.findOneAndDelete({storeId, upc: req.query.upc});
+            if(!byUpc) return res.status(404).json({message: 'Item not found'});
+            return res.status(200).json({message: `Item ${byUpc.name} deleted successfully`});
+        }
+
+        // delete all: DELETE /:storeId/items?all=true (cascada)
+        if(req.query.all === 'true'){
+            const deletedItems = await Item.deleteMany({storeId});
+            return res.status(200).json({message: `Deleted ${deletedItems.deletedCount} items from store ${storeId}`});
+        }
+
+        // without itemId or query, nothing to delete
+        if(!itemId) return res.status(400).json({message: 'Provide itemId, ?upc= or ?all=true'});
+
+        // delete item by id
+        const deletedItem = await Item.findById(itemId);
+
+        if(!deletedItem) return res.status(404).json({message: 'Item not found'});
+
+        if(deletedItem.storeId.toString() !== storeId) return res.status(404).json({message: 'Item not found in this store'});
+
+        await deletedItem.deleteOne();
+
+        res.status(200).json({message: `Item ${deletedItem.name} deleted successfully`});
+    } catch(error){
+        console.error(error)
+        res.status(400).json({message: 'Failed to delete item'});
+    }
+}
+
+/**
+ * Helper for cascading deletion (used when deleting a store or all items from that store).
+ */
+export const deleteItems = async (req, res) => {
+    req.query.all = 'true';
+    return deleteItem(req, res);
+};
