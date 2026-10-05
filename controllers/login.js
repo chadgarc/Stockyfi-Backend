@@ -1,4 +1,4 @@
-import User from "../models/User.js";
+import { User } from "../models/User.js";
 import { generateToken } from "../middleware/auth.js";
 
 export const login = async (req, res) => {

@@ -2,6 +2,8 @@ import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 import Store from "./Store.js";
 
+const validRoles = ['owner', 'manager', 'associate']
+
 const userSchema = new mongoose.Schema({
     name: {
         type: String,
@@ -29,7 +31,7 @@ const userSchema = new mongoose.Schema({
     role: {
         type: String,
         required: true,
-        enum: ["owner", "manager", "associate"],
+        enum: validRoles,
         default: "associate",
     },
 }, { timestamps: true } );
@@ -61,4 +63,4 @@ userSchema.methods.comparePassword = async function (password) {
 
 const User = mongoose.model("User", userSchema);
 
-export default User;
+export { User, validRoles };
