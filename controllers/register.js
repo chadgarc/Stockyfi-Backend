@@ -1,10 +1,14 @@
 import {User, validRoles} from "../models/User.js";
-
+// for validRoles array: owner: 0, manager: 1, associate: 2
 export const register = async (req, res) => {
     try{
         // get user info from request, userRole and userStoreId are for the current user
-        const {name, email, password, role, storeId, userRole, userStoreId} = req.body;
+        const {name, email, password, role, storeId} = req.body;
         
+        // get user role and storeId from request (from protect middleware)
+        const userRole = req.user.role.toString();
+        const userStoreId = req.user.role === validRoles[0] ? null : req.user.storeId.toString();
+
         // validate data
         if(!name || !email || !password) return res.status(400).json({message: 'Email and password required'});
 
@@ -16,12 +20,12 @@ export const register = async (req, res) => {
         if(!validRoles.includes(role)) return res.status(400).json({message: 'Invalid role'});
 
         // validate current user role and storeId - manager or owner can create a new user
-        if(userRole !== 'manager' && userRole !== 'owner') return res.status(403).json({message: 'Not authorized to create new users'});
+        if(userRole !== validRoles[1] && userRole !== validRoles[0]) return res.status(403).json({message: 'Not authorized to create new users'});
         
         // manager cannot create owners, and cannot create users in a different store
-        if(userRole === 'manager'){
+        if(userRole === validRoles[1]){
             if(userStoreId !== storeId) return res.status(403).json({message: 'Not authorized to create users in this store'});
-            if(role === 'owner') return res.status(403).json({message: 'Not authorized to create owners'});
+            if(role === validRoles[0]) return res.status(403).json({message: 'Not authorized to create owners'});
         }
 
         // create new user
@@ -33,7 +37,7 @@ export const register = async (req, res) => {
             storeId,
         });
 
-        res.status(201).json(newUser);
+        res.status(201).json({message: `User ${newUser.name} created successfully`});
     } catch(error){
         console.error(error)
         res.status(400).json({message: 'Failed to register new user'});

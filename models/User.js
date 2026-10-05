@@ -25,14 +25,14 @@ const userSchema = new mongoose.Schema({
         ref: "Store",
         required: function () {
             // Only require storeId if the user is not the owner
-            return this.role !== "owner";
+            return this.role !== validRoles[0];
         },
     },
     role: {
         type: String,
         required: true,
         enum: validRoles,
-        default: "associate",
+        default: validRoles[2],
     },
 }, { timestamps: true } );
 
@@ -46,10 +46,10 @@ userSchema.pre("save", async function () {
     }
 
     // If the user's role is owner, set storeId to null
-    if(this.role === "owner") this.storeId = null;
+    if(this.role === validRoles[0]) this.storeId = null;
 
     // If the user's storeId has been modified, check if it exists and if not, create it
-    if (this.isModified("storeId") && this.role !== "owner") {
+    if (this.isModified("storeId") && this.role !== validRoles[0]) {
         const store = await Store.findById(this.storeId);
         if (!store) throw new Error("Store not found");
         this.storeId = store._id;
