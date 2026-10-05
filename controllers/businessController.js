@@ -24,7 +24,7 @@ export const getBusiness = async (req, res) => {
 
 export const updateBusiness = async (req, res) => {
     try {
-        const { name, streets, city, state, zip, phone } = req.body;
+        const { name, streetAddress, city, state, zip, phone } = req.body;
 
         // check if user role is valid
         if(!validRoles.includes(req.user.role)) return res.status(400).json({message: 'Invalid role'});
@@ -33,8 +33,7 @@ export const updateBusiness = async (req, res) => {
         if(req.user.role !== validRoles[0]) return res.status(403).json({message: 'Not authorized to update business information'});
 
         const business = await Business.findOneAndUpdate(
-            req.user.businessId,
-            { name, streets, city, state, zip, phone },
+            { name, streetAddress, city, state, zip, phone },
             { new: true, runValidators: true }
         );
         if (!business) {
