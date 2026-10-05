@@ -12,7 +12,7 @@ Env: `PORT, MONGO_URI, JWT_SECRET`.
 
 ## 3. Models
 
-- `Business{name:String*, streetAddress:String*, city:String*, state:String*, zip:String*}` — single doc.
+- `Business{name:String*, streetAddress:String*, city:String*, state:String*, zip:String*, phone?:String 10 digits}` — single doc.
 - `User{name*, email* unique, password* hashed, role: owner|manager|associate, storeId: null if owner else ObjectId Store*}`
 - `Store{name*, streetAddress*, city*, state*, zip*}` — no default.
 - `Item{name*, upc* unique, department?, inStock:Number >=0, inShelf:Number 0<=x<=inStock, storeId ref Store*}`
@@ -25,8 +25,8 @@ Env: `PORT, MONGO_URI, JWT_SECRET`.
 
 ## 5. Endpoints + RBAC
 
-- `GET /api/business` owner only — others 403, business name private.
-- `PUT /api/business` owner only.
+- `GET /api/info` owner only — others 403, business name private.
+- `PUT /api/info` owner only.
 - `GET /api/stores` owner=all, manager/associate=own only.
 - `POST /api/stores` owner only.
 - `GET /api/stores/:storeId/items` all roles + jurisdiction check.

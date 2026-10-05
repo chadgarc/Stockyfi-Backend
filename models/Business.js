@@ -32,6 +32,7 @@ const businessSchema = new mongoose.Schema({
         trim: true,
         validate: {
             validator: function(phoneNumber) {
+                if(!phoneNumber) return true;
                 return /^\d{10}$/.test(phoneNumber);
             },
             message: 'Phone number must be 10 digits'
