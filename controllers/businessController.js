@@ -1,5 +1,6 @@
 import Business from "../models/Business.js";
-import { validRoles } from "../models/User.js";
+// Role helpers live in ../utils/roles.js (isOwner reads clearer than validRoles[0])
+import { validRoles, isOwner } from "../utils/roles.js";
 
 export const getBusiness = async (req, res) => {
     try {
@@ -13,7 +14,7 @@ export const getBusiness = async (req, res) => {
         if(!validRoles.includes(req.user.role)) return res.status(400).json({message: 'Invalid role'});
 
         // only owner can get the business information
-        if(req.user.role !== validRoles[0]) return res.status(403).json({message: 'Not authorized to get business information'});
+        if(!isOwner(req.user)) return res.status(403).json({message: 'Not authorized to get business information'});
         
         res.status(200).json(business);
     } catch (error) {
@@ -30,7 +31,7 @@ export const updateBusiness = async (req, res) => {
         if(!validRoles.includes(req.user.role)) return res.status(400).json({message: 'Invalid role'});
 
         // only owner can update the business information
-        if(req.user.role !== validRoles[0]) return res.status(403).json({message: 'Not authorized to update business information'});
+        if(!isOwner(req.user)) return res.status(403).json({message: 'Not authorized to update business information'});
 
         // {} is to find the first business since we only have one
         const business = await Business.findOneAndUpdate( {},

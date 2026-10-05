@@ -1,4 +1,5 @@
-import {User, validRoles} from "../models/User.js";
+import { User } from "../models/User.js";
+import { validRoles, ROLES } from "../utils/roles.js";
 // for validRoles array: owner: 0, manager: 1, associate: 2
 export const register = async (req, res) => {
     try{
@@ -7,7 +8,7 @@ export const register = async (req, res) => {
         
         // get user role and storeId from request (from protect middleware)
         const userRole = req.user.role.toString();
-        const userStoreId = req.user.role === validRoles[0] ? null : req.user.storeId.toString();
+        const userStoreId = req.user.role === ROLES.OWNER ? null : req.user.storeId.toString();
 
         // validate data
         if(!name || !email || !password) return res.status(400).json({message: 'Email and password required'});
@@ -20,12 +21,12 @@ export const register = async (req, res) => {
         if(!validRoles.includes(role)) return res.status(400).json({message: 'Invalid role'});
 
         // validate current user role and storeId - manager or owner can create a new user
-        if(userRole !== validRoles[1] && userRole !== validRoles[0]) return res.status(403).json({message: 'Not authorized to create new users'});
+        if(userRole !== ROLES.MANAGER && userRole !== ROLES.OWNER) return res.status(403).json({message: 'Not authorized to create new users'});
         
         // manager cannot create owners, and cannot create users in a different store
-        if(userRole === validRoles[1]){
+        if(userRole === ROLES.MANAGER){
             if(userStoreId !== storeId) return res.status(403).json({message: 'Not authorized to create users in this store'});
-            if(role === validRoles[0]) return res.status(403).json({message: 'Not authorized to create owners'});
+            if(role === ROLES.OWNER) return res.status(403).json({message: 'Not authorized to create owners'});
         }
 
         // create new user

@@ -1,8 +1,7 @@
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 import Store from "./Store.js";
-
-const validRoles = ['owner', 'manager', 'associate']
+import { ROLES, validRoles } from "../utils/roles.js";
 
 const userSchema = new mongoose.Schema({
     name: {
@@ -25,14 +24,14 @@ const userSchema = new mongoose.Schema({
         ref: "Store",
         required: function () {
             // Only require storeId if the user is not the owner
-            return this.role !== validRoles[0];
+            return this.role !== ROLES.OWNER;
         },
     },
     role: {
         type: String,
         required: true,
         enum: validRoles,
-        default: validRoles[2],
+        default: ROLES.ASSOCIATE,
     },
 }, { timestamps: true } );
 
@@ -46,10 +45,10 @@ userSchema.pre("save", async function () {
     }
 
     // If the user's role is owner, set storeId to null
-    if(this.role === validRoles[0]) this.storeId = null;
+    if(this.role === ROLES.OWNER) this.storeId = null;
 
     // If the user's storeId has been modified, check if it exists and if not, create it
-    if (this.isModified("storeId") && this.role !== validRoles[0]) {
+    if (this.isModified("storeId") && this.role !== ROLES.OWNER) {
         const store = await Store.findById(this.storeId);
         if (!store) throw new Error("Store not found");
         this.storeId = store._id;
@@ -63,4 +62,5 @@ userSchema.methods.comparePassword = async function (password) {
 
 const User = mongoose.model("User", userSchema);
 
-export { User, validRoles };
+// Re-export for backwards compat (prefer importing from ../utils/roles.js going forward)
+export { User, ROLES, validRoles };

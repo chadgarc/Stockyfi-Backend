@@ -1,5 +1,5 @@
 import Item from "../models/Item.js";
-import { validRoles } from "../models/User.js";
+import { validRoles, ROLES, isOwner, isManager, sameStore } from "../utils/roles.js";
 
 export const createItem = async(req, res) => {
     try{
@@ -7,7 +7,7 @@ export const createItem = async(req, res) => {
 
         // get user role and storeId from request (from protect middleware)
         const userRole = req.user.role.toString();
-        const userStoreId = req.user.role === validRoles[0] ? null : req.user.storeId.toString();
+        const userStoreId = req.user.role === ROLES.OWNER ? null : req.user.storeId.toString();
 
         // validate data
         if(!name || !upc || !storeId || inShelf > inStock) return res.status(400).json({message: 'All fields required or invalid values'});
@@ -20,10 +20,10 @@ export const createItem = async(req, res) => {
         if(!validRoles.includes(userRole)) return res.status(400).json({message: 'Invalid role'});
 
         // validate current user role and storeId - manager or owner can create a new item
-        if(userRole !== validRoles[1] && userRole !== validRoles[0]) return res.status(403).json({message: 'Not authorized to create new items'});
+        if(userRole !== ROLES.MANAGER && userRole !== ROLES.OWNER) return res.status(403).json({message: 'Not authorized to create new items'});
         
         // manager cannot create items in a different store
-        if(userRole === validRoles[1] && userStoreId !== storeId) return res.status(403).json({message: 'Not authorized to create items in this store'});
+        if(userRole === ROLES.MANAGER && userStoreId !== storeId) return res.status(403).json({message: 'Not authorized to create items in this store'});
 
         // create new item
         const newItem = await Item.create({
@@ -49,7 +49,7 @@ export const updateItem = async(req, res) => {
 
         // get user role and storeId from request (from protect middleware)
         const userRole = req.user.role.toString();
-        const userStoreId = req.user.role === validRoles[0] ? null : req.user.storeId.toString();
+        const userStoreId = req.user.role === ROLES.OWNER ? null : req.user.storeId.toString();
 
         // validate data
         if(!name || !upc || !storeId || inShelf > inStock) return res.status(400).json({message: 'All fields required or invalid values'});
@@ -62,10 +62,10 @@ export const updateItem = async(req, res) => {
         if(!validRoles.includes(userRole)) return res.status(400).json({message: 'Invalid role'});
         
         // employees cannot change items in a different store
-        if( userStoreId !== storeId && userRole !== validRoles[0] ) return res.status(403).json({message: 'Not authorized to change items in this store'});
+        if( userStoreId !== storeId && userRole !== ROLES.OWNER ) return res.status(403).json({message: 'Not authorized to change items in this store'});
 
         // associates can only change inStock and inShelf value
-        if(userRole === validRoles[2] && (name !== item.name || upc !== item.upc || department !== item.department)) return res.status(403).json({message: 'Not authorized to change item information'});
+        if(userRole === ROLES.ASSOCIATE && (name !== item.name || upc !== item.upc || department !== item.department)) return res.status(403).json({message: 'Not authorized to change item information'});
 
         // update item
         const updatedItem = await Item.findByIdAndUpdate(itemId, {
@@ -90,13 +90,13 @@ export const getItem = async(req, res) => {
 
         // all roles can gather items from their assigned store, owner can gather from all stores
         const userRole = req.user.role.toString();
-        const userStoreId = req.user.role === validRoles[0] ? null : req.user.storeId.toString();
+        const userStoreId = req.user.role === ROLES.OWNER ? null : req.user.storeId.toString();
 
         // validate role
         if(!validRoles.includes(userRole)) return res.status(400).json({message: 'Invalid role'});
 
         // employees cannot get items from a different store, but the owner can get items from all stores
-        if( userStoreId !== storeId && userRole !== validRoles[0] ) return res.status(403).json({message: 'Not authorized to get items from this store'});
+        if( userStoreId !== storeId && userRole !== ROLES.OWNER ) return res.status(403).json({message: 'Not authorized to get items from this store'});
 
         // get item
         const item = await Item.findById(itemId);
@@ -122,13 +122,13 @@ export const getItems = async(req, res) => {
 
         // all roles can gather items from their assigned store, owner can gather from all stores
         const userRole = req.user.role.toString();
-        const userStoreId = req.user.role === validRoles[0] ? null : req.user.storeId.toString();
+        const userStoreId = req.user.role === ROLES.OWNER ? null : req.user.storeId.toString();
 
         // validate role
         if(!validRoles.includes(userRole)) return res.status(400).json({message: 'Invalid role'});
 
         // employees cannot get items from a different store, but the owner can get items from all stores
-        if( userStoreId !== storeId && userRole !== validRoles[0] ) return res.status(403).json({message: 'Not authorized to get items from this store'});
+        if( userStoreId !== storeId && userRole !== ROLES.OWNER ) return res.status(403).json({message: 'Not authorized to get items from this store'});
 
         // get items - if upc query provided, return single match
         if(req.query.upc){
@@ -158,16 +158,16 @@ export const deleteItem = async (req, res) => {
 
         // get user role and storeId from request (from protect middleware)
         const userRole = req.user.role.toString();
-        const userStoreId = req.user.role === validRoles[0] ? null : req.user.storeId.toString();
+        const userStoreId = req.user.role === ROLES.OWNER ? null : req.user.storeId.toString();
 
         // validate role
         if(!validRoles.includes(userRole)) return res.status(400).json({message: 'Invalid role'});
 
         // only owner|manager can delete
-        if(userRole !== validRoles[0] && userRole !== validRoles[1]) return res.status(403).json({message: 'Not authorized to delete items'});
+        if(userRole !== ROLES.OWNER && userRole !== ROLES.MANAGER) return res.status(403).json({message: 'Not authorized to delete items'});
 
         // employees cannot delete items from a different store, but the owner can delete items from all stores
-        if( userStoreId !== storeId && userRole !== validRoles[0] ) return res.status(403).json({message: 'Not authorized to delete items from this store'});
+        if( userStoreId !== storeId && userRole !== ROLES.OWNER ) return res.status(403).json({message: 'Not authorized to delete items from this store'});
 
         // delete by upc query: DELETE /:storeId/items?upc=123
         if(req.query.upc){
