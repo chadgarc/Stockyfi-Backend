@@ -33,6 +33,7 @@ Env: `PORT, MONGO_URI, JWT_SECRET`.
 - `POST /api/stores/:storeId/items` owner|manager only.
 - `PUT /api/stores/:storeId/items/:itemId` owner|manager full, associate only `inShelf` field else 403.
 - `DELETE /api/stores/:storeId/items/:itemId` owner|manager only.
+- `DELETE /api/users/:id` owner only (manager for own store). If target is owner and `count owners<=1` → 400 last owner protected.
 
 Middleware: `auth` verify JWT, `requireOwner`, `jurisdiction` owner bypass else `req.user.storeId == params.storeId`.
 
