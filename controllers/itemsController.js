@@ -77,7 +77,7 @@ export const updateItem = async(req, res) => {
             department,
         }, { new: true, runValidators: true });
 
-        res.status(201).json({message: `Item ${updatedItem.name} updated successfully`});
+        res.status(200).json({message: `Item ${updatedItem.name} updated successfully`});
     } catch(error){
         console.error(error)
         res.status(400).json({message: 'Failed to update item'});

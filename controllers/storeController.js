@@ -1,5 +1,7 @@
 import Store from "../models/Store.js";
-import { validRoles } from "../models/User.js";
+import { validRoles, User } from "../models/User.js";
+import Item from "../models/Item.js";
+
 
 export const createStore = async (req, res) => {
     try{
@@ -45,5 +47,36 @@ export const getStores = async (req, res) => {
     } catch(error){
         console.error(error);
         res.status(500).json({message: 'Failed to get stores'});
+    }
+}
+
+export const deleteStore = async (req, res) => {
+    try{
+        const userRole = req.user.role.toString();
+        const {storeId} = req.params;
+
+        // get store
+        const store = await Store.findById(storeId);
+        
+        // validate storeId
+        if(!store) return res.status(404).json({message: 'Store not found'});
+
+        // validate current user role - only owner can delete stores
+        if(userRole !== validRoles[0]) return res.status(403).json({message: 'Not authorized to delete stores'});
+        
+        // delete items from store
+        const itemsDeleted = await Item.deleteMany({storeId: storeId});
+
+        // delete staff from store
+        const staffDeleted = await User.deleteMany({storeId: storeId});
+        
+        // delete store
+        const storeDeleted = await store.deleteOne();
+
+        // verify store was deleted
+        res.status(200).json({message: 'Store deleted successfully'});
+    } catch(error){
+        console.error(error);
+        res.status(500).json({message: 'Failed to delete store'});
     }
 }
