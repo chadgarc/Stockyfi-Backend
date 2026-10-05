@@ -11,6 +11,10 @@ export const setupOwner = async (req,res) => {
         // if no owners, create an owner and business
         const {name, streetAddress, city, state, zip, ownerName, email, password} = req.body;
 
+        // validate data
+        if(!name || !streetAddress || !city || !state || !zip || !ownerName || !email || !password)
+            return res.status(400).json({message:'All fields required'});
+
         const owner = await User.create({
             name: ownerName,
             email,
