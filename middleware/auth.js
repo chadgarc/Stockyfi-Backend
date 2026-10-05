@@ -23,7 +23,7 @@ const protect = async (req, res, next) => {
         
         // Decode token and attach user to request
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = await User.findById(decoded.id).select('-password');
+        req.user = await User.findById(decoded.id).select('name email role storeId');
         
         // If user is not found, return unauthorized
         if(!req.user){
