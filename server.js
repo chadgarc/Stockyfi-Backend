@@ -6,7 +6,7 @@ dotenv.config();
 import "./config/connection.js";
 
 import express from "express";
-// import routes from "./routes/index.js";
+import routes from "./routes/index.js";
 
 const PORT = process.env.PORT || 3000;
 const app = express();
@@ -15,7 +15,7 @@ const app = express();
 app.use(express.json());
 
 // routes
-// app.use("/api", routes);
+app.use("/api", routes);
 
 // Default route - Test MongoDB connection
 app.get("/", (req, res) => res.json({ success: true, message: "Welcome to Stockify Backend" }));

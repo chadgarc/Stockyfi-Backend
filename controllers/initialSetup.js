@@ -31,9 +31,6 @@ export const setupOwner = async (req,res) => {
             zip,
         });
 
-        // create token
-        const token = generateToken(owner._id);
-        res.status(201).json({token});
     }
     catch (error){
         console.error('Error in setupOwner middleware:', error);
