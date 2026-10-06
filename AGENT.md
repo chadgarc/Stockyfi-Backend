@@ -6,16 +6,16 @@ Build secure modular REST API for Stockify Local: closed inventory + workforce m
 
 ## 2. Stack / Structure
 
-Node+Express, Mongoose Atlas, JWT, bcryptjs.
-Folders: `models/ routes/ controllers/ middleware/`. Entry `server.js`.
-Env: `PORT, MONGO_URI, JWT_SECRET`.
+Node+Express, Mongoose Atlas, JWT, bcrypt.
+Folders: `models/ routes/ controllers/ middleware/ utils/`. Entry `server.js`.
+Env: `PORT, MONGO_URI, JWT_SECRET, JWT_EXPIRE`.
 
 ## 3. Models
 
 - `Business{name:String*, streetAddress:String*, city:String*, state:String*, zip:String*, phone?:String 10 digits}` — single doc.
 - `User{name*, email* unique, password* hashed, role: owner|manager|associate, storeId: null if owner else ObjectId Store*}`
 - `Store{name*, streetAddress*, city*, state*, zip*}` — no default.
-- `Item{name*, upc* unique, department?, inStock:Number >=0, inShelf:Number 0<=x<=inStock, storeId ref Store*}`
+- `Item{name*, upc* (unique per store via compound index {storeId,upc}), department?, inStock:Number >=0, inShelf:Number 0<=x<=inStock, storeId ref Store*}`
 
 ## 4. Auth / First-Run
 
