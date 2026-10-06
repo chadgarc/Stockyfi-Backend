@@ -4,6 +4,7 @@ import { protect } from "../middleware/auth.js";
 import { getStores } from "../controllers/storeController.js";
 import jurisdiction from "../middleware/jurisdiction.js";
 import { createItem, updateItem, getItem, getItems, deleteItem} from "../controllers/itemsController.js";
+import { getUsers, getUser, updateUser, deleteUser } from "../controllers/userController.js";
 
 const router = Router();
 
@@ -17,5 +18,11 @@ router.get('/:storeId/items/:itemId', protect, jurisdiction, getItem);
 router.get('/:storeId/items', protect, jurisdiction, getItems);
 router.delete('/:storeId/items/:itemId', protect, jurisdiction, deleteItem);
 router.delete('/:storeId/items', protect, jurisdiction, deleteItem);
+
+// Nested staff routes per store (jurisdiction scopes manager to own store)
+router.get('/:storeId/users', protect, jurisdiction, getUsers);
+router.get('/:storeId/users/:userId', protect, jurisdiction, getUser);
+router.put('/:storeId/users/:userId', protect, jurisdiction, updateUser);
+router.delete('/:storeId/users/:userId', protect, jurisdiction, deleteUser);
 
 export default router;

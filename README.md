@@ -187,7 +187,7 @@ Body:
 }
 ```
 
-Returns `201`:
+Returns `200`:
 
 ```json
 { "message": "Item Coca 600ml updated successfully" }
@@ -218,12 +218,58 @@ Returns `200`:
 
 ---
 
-## 4. Planned (per AGENT.md, not yet exposed)
+## 4. Business (`/api/info`, owner only)
 
-- `GET/PUT /api/business` owner only.
-- `DELETE /api/stores/:storeId` owner only + cascade + block if staff remains.
-- `DELETE /api/users/:id` with last-owner protection (`count owners <= 1` → `400`).
+Single document created at setup. Others → `403`.
 
-## 5. Status codes
+### GET /api/info
+Returns `200`: `{ name, streetAddress, city, state, zip, phone? }`.
+
+### PUT /api/info
+Body (full object from GET, edited):
+```json
+{
+  "name": "SilverMart HQ",
+  "streetAddress": "123 Main St",
+  "city": "Dallas",
+  "state": "TX",
+  "zip": "75201",
+  "phone": "2145551234"
+}
+```
+`phone` optional, 10 digits. Returns `200` updated doc. Errors: `403/404/500`.
+
+---
+
+## 5. Users
+
+### GET /api/users/me — Own profile (any role)
+Returns `200`: `{ name, email, role, storeId }`. Never password.
+
+### PUT /api/users/me — Update own info (any role)
+`role/storeId` in body are ignored. Changing password requires `currentPassword`.
+```json
+{ "name": "New Name", "email": "me@x.com", "currentPassword": "Old123", "newPassword": "New123" }
+```
+Returns `200` safe profile. Errors: `400/401`.
+
+### GET /api/stores/:storeId/users — Store staff (owner|manager, jurisdiction)
+Manager only own store; associate → `403`. Returns `200` array without passwords.
+
+### PUT/DELETE /api/stores/:storeId/users/:userId — Edit/remove staff
+Manager can never touch owners; cannot move users to another store; cannot demote the only owner (`<=1` → `403`).
+
+### POST/PUT/DELETE /api/users/owners[/:id] — Owner admin (owner only)
+Owners are created only via `register` (single source; route forces `role=owner, storeId=null`). Last owner protected.
+
+---
+
+## 6. Stores — delete
+
+### DELETE /api/stores/:storeId — Delete store + cascade (owner only)
+Deletes items (`deleteMany`) + staff + store. Verify store first, then cascade.
+Returns `200`: `{ "message": "Store deleted successfully" }`. Errors: `403/404/500`.
+
+## 7. Status codes
 
 `200` ok, `201` created, `400` bad body/validation/duplicate, `401` no/bad token, `403` forbidden store/role, `404` not found, `500` server.

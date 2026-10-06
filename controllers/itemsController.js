@@ -67,6 +67,9 @@ export const updateItem = async(req, res) => {
         // associates can change inStock and inShelf value only
         if(isAssociate(req.user) && (name !== item.name || upc !== item.upc || department !== item.department)) return res.status(403).json({message: 'Not authorized to change item information'});
 
+        // NOTE: items CAN use findByIdAndUpdate+runValidators (numbers only, no hashing).
+        // Users must use save() instead (see updateUser) because runValidators
+        // does not run pre('save'): bcrypt hash, storeId=null, Store check.
         // update item
         const updatedItem = await Item.findByIdAndUpdate(itemId, {
             name,
