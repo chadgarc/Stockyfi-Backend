@@ -14,6 +14,10 @@
 
 [🔗 Backend Repository](https://github.com/chadgarc/Stockyfi-Backend) &nbsp;|&nbsp; [🔗 Frontend Repository](https://github.com/chadgarc/Stockyfi-Frontend)
 
+<br>
+
+[🔗 Deployed at render.com](https://stockyfi-backend.onrender.com/)
+
 <br/>
 
 | Base URL (Local)            | Response Format    | Authentication                |
