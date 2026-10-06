@@ -1,6 +1,6 @@
 import Store from "../models/Store.js";
 import { User } from "../models/User.js";
-import { validRoles, ROLES, isOwner, isManager, sameStore } from "../utils/roles.js";
+import { ROLES, isOwner, isManager, sameStore, canCreateStore, canDeleteStore, canReadStore } from "../utils/roles.js";
 import Item from "../models/Item.js";
 
 
@@ -14,8 +14,8 @@ export const createStore = async (req, res) => {
         // get user role and storeId from request (from protect middleware)
         const userRole = req.user.role.toString();
 
-        // validate current user role , sonly owner can create stores
-        if(userRole !== ROLES.OWNER) return res.status(403).json({message: 'Not authorized to create new stores'});
+        // validate current user role, only owner can create stores
+        if(!canCreateStore(req.user)) return res.status(403).json({message: 'Not authorized to create new stores'});
         
         // create new store
         const store = await Store.create({name, streetAddress, city, state, zip});
@@ -30,13 +30,13 @@ export const createStore = async (req, res) => {
 export const getStores = async (req, res) => {
     try{
         // get user role and storeId from request (from protect middleware)
-        const userRole = req.user.role.toString();
+        const user = req.user;
         const userStoreId = req.user.role === ROLES.OWNER ? null : req.user.storeId.toString();
 
         // validate current user role and storeId - owner or manager can get all stores, manager can only get their own store
-        if(userRole !== ROLES.OWNER){
+        if(!isOwner(user)){
             // Manager will get their store only
-            if(userRole === ROLES.MANAGER){
+            if(isManager(user)){
                 return res.status(200).json({message: 'Store found successfully', store: await Store.findById(userStoreId)});
             }
             // Associate will get their store name only
@@ -53,7 +53,7 @@ export const getStores = async (req, res) => {
 
 export const deleteStore = async (req, res) => {
     try{
-        const userRole = req.user.role.toString();
+        const user = req.user;
         const {storeId} = req.params;
 
         // get store
@@ -63,16 +63,16 @@ export const deleteStore = async (req, res) => {
         if(!store) return res.status(404).json({message: 'Store not found'});
 
         // validate current user role - only owner can delete stores
-        if(userRole !== ROLES.OWNER) return res.status(403).json({message: 'Not authorized to delete stores'});
+        if(!canDeleteStore(user)) return res.status(403).json({message: 'Not authorized to delete stores'});
         
         // delete items from store
-        const itemsDeleted = await Item.deleteMany({storeId: storeId});
+        await Item.deleteMany({storeId: storeId});
 
         // delete staff from store
-        const staffDeleted = await User.deleteMany({storeId: storeId});
+        await User.deleteMany({storeId: storeId});
         
         // delete store
-        const storeDeleted = await store.deleteOne();
+        await store.deleteOne();
 
         // verify store was deleted
         res.status(200).json({message: 'Store deleted successfully'});

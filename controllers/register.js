@@ -1,5 +1,5 @@
 import { User } from "../models/User.js";
-import { validRoles, ROLES } from "../utils/roles.js";
+import { validRoles, ROLES, canCreateUser } from "../utils/roles.js";
 // for validRoles array: owner: 0, manager: 1, associate: 2
 export const register = async (req, res) => {
     try{
@@ -20,14 +20,8 @@ export const register = async (req, res) => {
         // validate role
         if(!validRoles.includes(role)) return res.status(400).json({message: 'Invalid role'});
 
-        // validate current user role and storeId - manager or owner can create a new user
-        if(userRole !== ROLES.MANAGER && userRole !== ROLES.OWNER) return res.status(403).json({message: 'Not authorized to create new users'});
-        
-        // manager cannot create owners, and cannot create users in a different store
-        if(userRole === ROLES.MANAGER){
-            if(userStoreId !== storeId) return res.status(403).json({message: 'Not authorized to create users in this store'});
-            if(role === ROLES.OWNER) return res.status(403).json({message: 'Not authorized to create owners'});
-        }
+        // validate current user role and storeId - uses shared matrix (owner anything, manager own store)
+        if(!canCreateUser(req.user, role, storeId)) return res.status(403).json({message: 'Not authorized to create new users'});
 
         // create new user
         const newUser = await User.create({

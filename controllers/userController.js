@@ -40,26 +40,26 @@ export const createUser = async (req, res) => {
 
 export const deleteUser = async (req, res) => {
     try{
-        const userRole = req.user.role.toString();
+        const user = req.user;
         const {userId} = req.params;
         
         // get user
-        const user = await User.findById(userId);
+        const targetUser = await User.findById(userId);
 
         // check if user exists
-        if(!user) return res.status(404).json({message: 'User not found'});
+        if(!targetUser) return res.status(404).json({message: 'User not found'});
         
         // validate user role
-        if(!validRoles.includes(userRole)) return res.status(400).json({message: 'Invalid role'});
+        if(!validRoles.includes(targetUser.role.toString())) return res.status(400).json({message: 'Invalid role'});
         
         // only owner and manager can delete users
-        if(!isOwner(req.user) && userRole !== ROLES.MANAGER) return res.status(403).json({message: 'Not authorized to delete users'});
+        if(!isOwner(user) && !isManager(user)) return res.status(403).json({message: 'Not authorized to delete users'});
 
         // manager cannot act on owners (owner storeId is null, guard first to avoid crash)
-        if(isManagerActingOnOwner(req.user, user)) return res.status(403).json({message: 'Managers cannot delete owners'});
+        if(isManagerActingOnOwner(user, targetUser)) return res.status(403).json({message: 'Managers cannot delete owners'});
 
         // manager cannot delete users in a different store
-        if(userRole === ROLES.MANAGER && !sameStore(user.storeId, req.user.storeId)) return res.status(403).json({message: 'Not authorized to delete users in this store'});
+        if(isManager(user) && !sameStore(user.storeId, targetUser.storeId)) return res.status(403).json({message: 'Not authorized to delete users in this store'});
         
         // if user to be deleted is owner, prevent it. at least 1 owner must exist in business
         const ownersUsers = await User.countDocuments({role: ROLES.OWNER});
@@ -77,27 +77,52 @@ export const deleteUser = async (req, res) => {
 export const getUsers = async (req, res) => {
     try{
         const {storeId} = req.params;
-        const userRole = req.user.role.toString();
-        const userStoreId = req.user.role === validRoles[0] ? null : req.user.storeId.toString();
+        const user = req.user;
 
         // validate user role
-        if(!validRoles.includes(userRole)) return res.status(400).json({message: 'Invalid role'});
+        if(!validRoles.includes(user.role.toString())) return res.status(400).json({message: 'Invalid role'});
         
         // manager cannot get users from a different store or associates cannot get any users
-        if((userRole === validRoles[1] && userStoreId !== storeId) ||
-        ((!userRole.includes(validRoles[0]) && !userRole.includes(validRoles[1]))))
-            return res.status(403).json({message: 'Not authorized to get those users'});
+        if((isManager(user) && !sameStore(user.storeId, storeId)) ||
+        (!isOwner(user) && !isManager(user)))
+            return res.status(403).json({message: 'Not authorized to get retrieve users'});
 
         // get user
-        const user = await User.findById(userId);
+        const users = await User.find({storeId});
 
         // check if user exists
-        if(!user) return res.status(404).json({message: 'User not found'});
+        if(!users) return res.status(404).json({message: 'User not found'});
 
-        res.status(200).json(user);
+        res.status(200).json(users);
     } catch(error){
         console.error(error);
         res.status(400).json({message: 'Failed to get users'});
+    }
+}
+
+export const getUser = async (req, res) => {
+    try{
+        const {storeId, userId} = req.params;
+        const user = req.user;
+
+        // validate user role
+        if(!validRoles.includes(user.role.toString())) return res.status(400).json({message: 'Invalid role'});
+        
+        // manager cannot get users from a different store or associates cannot get any users
+        if((isManager(user) && !sameStore(user.storeId, storeId)) ||
+        (!isOwner(user) && !isManager(user)))
+            return res.status(403).json({message: 'Not authorized to get user'});
+
+        // get user
+        const targetUser = await User.findById(userId);
+
+        // check if user exists
+        if(!targetUser) return res.status(404).json({message: 'User not found'});
+
+        res.status(200).json(targetUser);
+    } catch(error){
+        console.error(error);
+        res.status(400).json({message: 'Failed to get user'});
     }
 }
 
