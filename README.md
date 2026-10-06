@@ -1,25 +1,102 @@
-# Stockify Local — Backend
+<div align="center">
 
-Backend Repo: https://github.com/chadgarc/Stockyfi-Backend <br>
-Frontend Repo: https://github.com/chadgarc/Stockyfi-Frontend
+# 🏪 Stockify Local — Backend API
 
-Secure modular REST API for inventory + workforce management. Multi-store, jurisdictional RBAC (`owner` global, `manager`/`associate` scoped to `storeId`), stock-to-shelf tracking (`inStock` vs `inShelf`).
+**Modern RESTful API for smart inventory and staff management in small retail stores.**
 
-Base URL (local): `http://localhost:3000/api`
-
-Auth: `Authorization: Bearer <JWT>` header on all protected routes. `401` = identity (no/bad token), `403` = permission (valid token, wrong store/role).
-
-Roles: `owner | manager | associate`. Owner has `storeId = null` (global). Manager/associate require a valid `storeId`.
+![Node.js](https://img.shields.io/badge/Node.js-v20+-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
+![Express](https://img.shields.io/badge/Express-v5.2-000000?style=for-the-badge&logo=express&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose_9-47A248?style=for-the-badge&logo=mongodb&logoColor=white)
+![JWT Auth](https://img.shields.io/badge/JWT-Protected-000000?style=for-the-badge&logo=jsonwebtokens&logoColor=white)
+![PNPM](https://img.shields.io/badge/pnpm-12.8-F69220?style=for-the-badge&logo=pnpm&logoColor=white)
 
 ---
 
-## 1. Auth
+[🔗 Backend Repository](https://github.com/chadgarc/Stockyfi-Backend) &nbsp;|&nbsp; [🔗 Frontend Repository](https://github.com/chadgarc/Stockyfi-Frontend)
 
-### POST /api/auth/setup — First-run setup (public, locked after first owner)
+<br/>
 
-Creates Business + first owner. Second call → `403 Setup locked`.
+| Base URL (Local)            | Response Format    | Authentication                |
+| :-------------------------- | :----------------- | :---------------------------- |
+| `http://localhost:3000/api` | `application/json` | `Authorization: Bearer <JWT>` |
 
-Body (raw JSON):
+</div>
+
+<br/>
+
+> [!IMPORTANT]
+> **One time initial setup:** No public signups. The initial setup registers the first **Business Owner**, who then invites managers and associates per store. Like a docker container.
+
+> [!NOTE]
+> **Stock-to-Shelf Tracking:** Stockify tracks total backroom stock (`inStock`) alongside real-time sales floor availability (`inShelf`).
+
+---
+
+## 📑 Table of Contents
+
+- [✨ Key Features](#-key-features)
+- [👑 Role & Permissions Matrix](#-role--permissions-matrix)
+- [🚀 Quickstart Flow](#-quickstart-flow)
+- [📡 API Reference](#-api-reference)
+  - [🔐 1. Authentication](#-1-authentication)
+  - [🏬 2. Stores](#-2-stores)
+  - [📦 3. Items & Inventory](#-3-items--inventory)
+  - [🏢 4. Business Info](#-4-business-info)
+  - [👥 5. Users & Staff](#-5-users--staff)
+- [🧭 Status Codes Matrix](#-status-codes-matrix)
+- [⚙️ Setup & Local Installation](#️-setup--local-installation)
+
+---
+
+## ✨ Key Features
+
+- 📦 **Stock-to-Shelf Tracking:** Detailed inventory breakdown (`Backroom / inStock ➡️ Shelf / inShelf`).
+- 🏬 **Multi-Store Jurisdiction:** Strict scope isolation of inventory and employees per store location.
+- 🏷️ **UPC Indexing per Store:** The same barcode (UPC) can exist in multiple stores independently (compound indexing).
+- 🔐 **Granular RBAC:** Role-Based Access Control enforcing `owner`, `manager`, and `associate` permissions.
+- 🛡️ **Owner Safeguards:** Protection rules preventing zero-owner deadlock scenarios.
+
+---
+
+## 👑 Role & Permissions Matrix
+
+| Module / Action                                     |  Owner 👑  |     Manager 🧑‍💼      |    Associate 🙋     |
+| :-------------------------------------------------- | :--------: | :-----------------: | :-----------------: |
+| First-Time Setup Wizard                             |     ✅     |         ❌          |         ❌          |
+| Manage Stores (Create/Delete)                       |     ✅     |         ❌          |         ❌          |
+| View Stores                                         | All stores | Assigned store only | Assigned store only |
+| View Inventory                                      |     ✅     |         ✅          |         ✅          |
+| Create / Delete Items                               |     ✅     |         ✅          |         ❌          |
+| Edit Name / UPC / Department                        |     ✅     |         ✅          |         ❌          |
+| Update Stock & Shelf Counts (`inStock` / `inShelf`) |     ✅     |         ✅          |         ✅          |
+| Register Staff (Manager/Associate)                  |     ✅     |   ✅ (Own store)    |         ❌          |
+| Manage Owners                                       |     ✅     |         ❌          |         ❌          |
+| Edit Business Information                           |     ✅     |         ❌          |         ❌          |
+
+---
+
+## 🚀 Quickstart Flow
+
+1. **Run Setup Wizard:** Call `POST /api/auth/setup` once to create the Business and the primary **Owner 👑** account.
+2. **Authenticate:** Use the returned token in subsequent requests header (`Authorization: Bearer <token>`).
+3. **Create Store Locations:** Register stores via `POST /api/stores`.
+4. **Populate Inventory:** Add items under store scope in the URL: `/api/stores/:storeId/items`.
+5. **Invite Team:** Register store managers and associates passing their `storeId` via `/api/auth/register`.
+
+---
+
+## 📡 API Reference
+
+### 🔐 1. Authentication
+
+<details>
+<summary><b><code>POST</code> /api/auth/setup — First-Run Setup Wizard (Public / Locks After Execution)</b></summary>
+
+<br/>
+
+> Creates the Business profile and primary Owner account. **Can only be executed once.**
+
+**Request Body:**
 
 ```json
 {
@@ -34,35 +111,42 @@ Body (raw JSON):
 }
 ```
 
-Returns `201`:
+**Responses:**
+
+- `201 Created` 🎉 → `{ "token": "<JWT>" }`
+- `403 Forbidden` 🔒 → Service is locked (setup already completed).
+
+</details>
+
+<details>
+<summary><b><code>POST</code> /api/auth/login — User Authentication (Public)</b></summary>
+
+<br/>
+
+**Request Body:**
 
 ```json
-{ "token": "<JWT>" }
+{
+  "email": "owner@silvermart.com",
+  "password": "Password123"
+}
 ```
 
-Errors: `400` missing fields, `403` locked, `500` failed.
+**Responses:**
 
-### POST /api/auth/login — Login (public)
+- `200 OK` ✅ → `{ "token": "<JWT>" }`
+- `401 Unauthorized` 🔑 → Invalid credentials.
 
-Body:
+</details>
 
-```json
-{ "email": "owner@silvermart.com", "password": "Password123" }
-```
+<details>
+<summary><b><code>POST</code> /api/auth/register — Register Staff (Protected 🔐)</b></summary>
 
-Returns `200`:
+<br/>
 
-```json
-{ "token": "<JWT>" }
-```
+> **Owners 👑** can create any role in any store. **Managers 🧑‍💼** can create `manager` or `associate` accounts in their assigned store only.
 
-Errors: `400` missing, `401` invalid credentials.
-
-### POST /api/auth/register — Create user (protected)
-
-Requires `protect`. Owner can create `owner|manager|associate` anywhere (`null` storeId if owner). Manager can create `manager|associate` only in own store. Associate → `403`.
-
-Body (owner creating manager):
+**Request Body:**
 
 ```json
 {
@@ -74,32 +158,23 @@ Body (owner creating manager):
 }
 ```
 
-Body (owner creating owner, no store needed):
+**Responses:**
 
-```json
-{
-  "name": "Second Owner",
-  "email": "owner2@silvermart.com",
-  "password": "Password123",
-  "role": "owner"
-}
-```
+- `201 Created` ✅ → User created.
+- `403 Forbidden` 🚫 → Insufficient jurisdiction or forbidden role assignment.
 
-Returns `201`:
-
-```json
-{ "message": "User Marta Manager created successfully" }
-```
-
-Errors: `400` missing/duplicate/invalid role, `403` not authorized.
+</details>
 
 ---
 
-## 2. Stores
+### 🏬 2. Stores
 
-### POST /api/stores — Create store (owner only)
+<details>
+<summary><b><code>POST</code> /api/stores — Create Store Location (Owner 👑)</b></summary>
 
-Body:
+<br/>
+
+**Request Body:**
 
 ```json
 {
@@ -111,122 +186,140 @@ Body:
 }
 ```
 
-Returns `201`:
+**Response:** `201 Created` ✅
 
-```json
-{ "message": "Store created successfully" }
-```
+</details>
 
-Errors: `400` missing, `403` non-owner.
+<details>
+<summary><b><code>GET</code> /api/stores — List Stores (Protected 🔐)</b></summary>
 
-### GET /api/stores — List stores (protected)
+<br/>
 
-- Owner → all stores array.
-- Manager → own store object.
-- Associate → own store (limited fields).
+- **Owner 👑:** Returns all store locations in the business.
+- **Manager 🧑‍💼 / Associate 🙋:** Returns only their assigned store.
 
-Returns `200`: array or object. Errors: `401/500`.
+**Response:** `200 OK` ✅
+
+</details>
+
+<details>
+<summary><b><code>DELETE</code> /api/stores/:storeId — Delete Store (Owner 👑, Cascade 💥)</b></summary>
+
+<br/>
+
+> [!WARNING]
+> This permanently deletes the store along with **all items and staff assigned to it**.
+
+**Response:** `200 OK` 💥
+
+</details>
 
 ---
 
-## 3. Items (nested, jurisdictional)
+### 📦 3. Items & Inventory
 
-All require `protect + jurisdiction`. Owner bypasses store check; others must match `:storeId` to their `storeId`, else `403`.
+> [!NOTE]
+> `storeId` **must always be passed in the URL** (`/api/stores/:storeId/items`), never in the request payload body.
 
-Item shape: `{ name*, upc*, storeId*, inStock >= 0, inShelf 0..inStock, department? }`. UPC is unique per store (compound index `{storeId, upc}`): same UPC allowed across stores, blocked twice in the same store.
+<details>
+<summary><b><code>POST</code> /api/stores/:storeId/items — Create Item (Owner 👑 | Manager 🧑‍💼)</b></summary>
 
-### POST /api/stores/:storeId/items — Create item (owner|manager only)
+<br/>
 
-Body:
+**Request Body:**
 
 ```json
 {
   "name": "Coca 600ml",
   "upc": "123456789012",
-  "storeId": "<STORE_ID>",
   "inStock": 100,
   "inShelf": 20,
   "department": "drinks"
 }
 ```
 
-Returns `201`:
+**Response:** `201 Created` ✅ (Associates receive `403 Forbidden` 🚫).
 
-```json
-{ "message": "Item Coca 600ml created successfully" }
-```
+</details>
 
-Errors: `400` missing/invalid/duplicate, `403` associate or wrong store.
+<details>
+<summary><b><code>GET</code> /api/stores/:storeId/items — Fetch Items (Protected 🔐)</b></summary>
 
-### GET /api/stores/:storeId/items — List items (all roles)
+<br/>
 
-Optional query `?upc=123456789012` → returns single match instead of list.
+Supports optional barcode lookup via Query Parameter:
 
-Returns `200`: array, or single object when `?upc`. Errors: `403/404/400`.
+- `GET /api/stores/:storeId/items` (Fetch full inventory list)
+- `GET /api/stores/:storeId/items?upc=123456789012` (Fetch single item by UPC)
 
-### GET /api/stores/:storeId/items/:itemId — Get one (all roles)
+**Response:** `200 OK` ✅
 
-Optional `?upc=` verifies `item.upc` matches, else `404`. Verifies `item.storeId === :storeId`.
+</details>
 
-Returns `200`: item object. Errors: `403/404`.
+<details>
+<summary><b><code>GET</code> /api/stores/:storeId/items/:itemId — Get Single Item</b></summary>
 
-### PUT /api/stores/:storeId/items/:itemId — Update (owner|manager full, associate stock-only)
+<br/>
 
-Associate may change only `inStock/inShelf`; changing `name/upc/department` → `403`. Requires full body + `inShelf <= inStock`. Uses `{ new: true, runValidators: true }`.
+**Response:** `200 OK` ✅ (If item does not belong to the target store, returns `404 Not Found` 🙈).
 
-Body:
+</details>
+
+<details>
+<summary><b><code>PUT</code> /api/stores/:storeId/items/:itemId — Update Item</b></summary>
+
+<br/>
+
+- **Owner / Manager:** Full field edit (`name`, `upc`, `inStock`, `inShelf`, `department`).
+- **Associate 🙋:** Restricted edit (`inStock`, `inShelf` counts only).
 
 ```json
 {
   "name": "Coca 600ml",
   "upc": "123456789012",
-  "storeId": "<STORE_ID>",
   "inStock": 90,
   "inShelf": 30,
   "department": "drinks"
 }
 ```
 
-Returns `200`:
+**Response:** `200 OK` ✅
 
-```json
-{ "message": "Item Coca 600ml updated successfully" }
-```
+</details>
 
-Errors: `400/403/404`.
+<details>
+<summary><b><code>DELETE</code> /api/stores/:storeId/items — Delete Items (Owner 👑 | Manager 🧑‍💼)</b></summary>
 
-### DELETE /api/stores/:storeId/items/:itemId — Delete by ID (owner|manager only)
+<br/>
 
-Returns `200`:
+Supported deletion modes:
 
-```json
-{ "message": "Item Coca 600ml deleted successfully" }
-```
+- `DELETE /api/stores/:storeId/items/:itemId` (By item ID)
+- `DELETE /api/stores/:storeId/items?upc=123456789012` (By UPC)
+- `DELETE /api/stores/:storeId/items?all=true` (Clear store inventory 💥)
 
-### DELETE /api/stores/:storeId/items?upc=123 — Delete by UPC (owner|manager only)
+**Response:** `200 OK` ✅
 
-Deletes one by `{storeId, upc}`. Returns `200` message. `404` if not found.
-
-### DELETE /api/stores/:storeId/items?all=true — Delete all (owner|manager only, cascade helper)
-
-Deletes all items of the store via `deleteMany({storeId})`. Used for store cascade.
-Returns `200`:
-
-```json
-{ "message": "Deleted 5 items from store <STORE_ID>" }
-```
+</details>
 
 ---
 
-## 4. Business (`/api/info`, owner only)
+### 🏢 4. Business Info
 
-Single document created at setup. Others → `403`.
+<details>
+<summary><b><code>GET</code> /api/info — Fetch Business Details (Owner 👑)</b></summary>
 
-### GET /api/info
-Returns `200`: `{ name, streetAddress, city, state, zip, phone? }`.
+<br/>
 
-### PUT /api/info
-Body (full object from GET, edited):
+**Response:** `200 OK` → `{ "name": "SilverMart HQ", "streetAddress": "...", "city": "...", "state": "...", "zip": "...", "phone": "..." }`
+
+</details>
+
+<details>
+<summary><b><code>PUT</code> /api/info — Update Business Profile (Owner 👑)</b></summary>
+
+<br/>
+
 ```json
 {
   "name": "SilverMart HQ",
@@ -237,39 +330,113 @@ Body (full object from GET, edited):
   "phone": "2145551234"
 }
 ```
-`phone` optional, 10 digits. Returns `200` updated doc. Errors: `403/404/500`.
+
+**Response:** `200 OK` ✅ (`phone` is optional, 10 digits format).
+
+</details>
 
 ---
 
-## 5. Users
+### 👥 5. Users & Staff
 
-### GET /api/users/me — Own profile (any role)
-Returns `200`: `{ name, email, role, storeId }`. Never password.
+<details>
+<summary><b><code>GET</code> /api/users/me — Current User Profile</b></summary>
 
-### PUT /api/users/me — Update own info (any role)
-`role/storeId` in body are ignored. Changing password requires `currentPassword`.
+<br/>
+
+**Response:** `200 OK` → `{ "name": "...", "email": "...", "role": "...", "storeId": "..." }` _(Excludes password field 🤫)_.
+
+</details>
+
+<details>
+<summary><b><code>PUT</code> /api/users/me — Update Self Profile</b></summary>
+
+<br/>
+
+> Edit own name, email, and password. `role` and `storeId` modifications are ignored on this endpoint.
+
 ```json
-{ "name": "New Name", "email": "me@x.com", "currentPassword": "Old123", "newPassword": "New123" }
+{
+  "name": "New Name",
+  "currentPassword": "OldPassword123",
+  "newPassword": "NewPassword123"
+}
 ```
-Returns `200` safe profile. Errors: `400/401`.
 
-### GET /api/stores/:storeId/users — Store staff (owner|manager, jurisdiction)
-Manager only own store; associate → `403`. Returns `200` array without passwords.
+**Response:** `200 OK` ✅
 
-### PUT/DELETE /api/stores/:storeId/users/:userId — Edit/remove staff
-Manager can never touch owners; cannot move users to another store; cannot demote the only owner (`<=1` → `403`).
+</details>
 
-### POST/PUT/DELETE /api/users/owners[/:id] — Owner admin (owner only)
-Owners are created only via `register` (single source; route forces `role=owner, storeId=null`). Last owner protected.
+<details>
+<summary><b><code>GET | PUT | DELETE</code> /api/stores/:storeId/users[/:userId] — Manage Store Staff</b></summary>
+
+<br/>
+
+> Allows Owners and Managers to manage workers assigned to a specific store. Managers cannot modify or remove Owner accounts.
+
+</details>
+
+<details>
+<summary><b><code>POST | PUT | DELETE</code> /api/users/owners[/:id] — Owner Administration (Owner 👑)</b></summary>
+
+<br/>
+
+> Manage Owner tier accounts. Includes active safeguards to prevent deleting the last remaining Owner in the system 🛡️.
+
+</details>
 
 ---
 
-## 6. Stores — delete
+## 🧭 Status Codes Matrix
 
-### DELETE /api/stores/:storeId — Delete store + cascade (owner only)
-Deletes items (`deleteMany`) + staff + store. Verify store first, then cascade.
-Returns `200`: `{ "message": "Store deleted successfully" }`. Errors: `403/404/500`.
+| Code  | Status                | Context & Description                                                   |
+| :---: | :-------------------- | :---------------------------------------------------------------------- |
+| `200` | ✅ **OK**             | Request successfully processed.                                         |
+| `201` | 🎉 **Created**        | Resource (User, Store, Item) successfully created.                      |
+| `400` | ⚠️ **Bad Request**    | Missing required fields or invalid JSON format.                         |
+| `401` | 🔑 **Unauthorized**   | Missing, invalid, or expired JWT token.                                 |
+| `403` | 🚫 **Forbidden**      | Insufficient permissions or access outside assigned store jurisdiction. |
+| `404` | 🙈 **Not Found**      | Resource or route not found.                                            |
+| `500` | 🔥 **Internal Error** | Unhandled server exception.                                             |
 
-## 7. Status codes
+---
 
-`200` ok, `201` created, `400` bad body/validation/duplicate, `401` no/bad token, `403` forbidden store/role, `404` not found, `500` server.
+## ⚙️ Setup & Local Installation
+
+### Prerequisites
+
+- **Node.js:** `v20.x` or higher
+- **pnpm:** `v12.x` (`npm i -g pnpm`)
+- **MongoDB:** Local instance or MongoDB Atlas connection URI
+
+### 1. Clone Repository & Install Dependencies
+
+```bash
+git clone https://github.com/chadgarc/Stockyfi-Backend.git
+cd Stockyfi-Backend
+pnpm install or npm install
+```
+
+### 2. Configure Environment Variables (`.env`)
+
+Create a `.env` file in the root directory:
+
+```env
+PORT=3000
+MONGO_URI=<MONGODB_URI>
+JWT_SECRET=<JWT_SECRET>
+```
+
+### 3. Start Development Server
+
+```bash
+pnpm dev
+```
+
+The server will start at `http://localhost:3000` with hot-reload enabled via `nodemon`.
+
+---
+
+<div align="center">
+  <sub>Built with ❤️ for Per Scholas Capstone | Stockify © 2026</sub>
+</div>

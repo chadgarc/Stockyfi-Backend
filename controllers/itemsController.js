@@ -3,7 +3,10 @@ import { validRoles, ROLES, isOwner, isManager, sameStore, canCreateItem, canDel
 
 export const createItem = async(req, res) => {
     try{
-        const {name, upc, storeId, inStock, inShelf, department = 'any'} = req.body;
+        const {name, upc, inStock, inShelf, department = 'any'} = req.body;
+
+        // get storeId from request (from protect middleware)
+        const storeId = req.params.storeId;
 
         // get user role and storeId from request (from protect middleware)
         const userRole = req.user.role.toString();
@@ -44,8 +47,8 @@ export const createItem = async(req, res) => {
 
 export const updateItem = async(req, res) => {
     try{
-        const {name, upc, storeId, inStock, inShelf, department} = req.body;
-        const {itemId} = req.params;
+        const {name, upc, inStock, inShelf, department} = req.body;
+        const {itemId, storeId} = req.params;
 
         // get user role and storeId from request (from protect middleware)
         const userRole = req.user.role.toString();
