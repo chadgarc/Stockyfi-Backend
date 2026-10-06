@@ -128,7 +128,36 @@ export const getUser = async (req, res) => {
 
 export const updateUser = async (req, res) => {
     try {
-        
+        const {userId} = req.params;
+        const user = req.user;
+        const {name, email, password, role, storeId} = req.body;
+
+        // validate user role
+        if(!validRoles.includes(user.role.toString())) return res.status(400).json({message: 'Invalid role'});
+
+        // validate current user role
+        if((isManager(user) && !sameStore(storeId, user.storeId)) ||
+        (!isOwner(user) && !isManager(user))) return res.status(403).json({message: 'Not authorized to update users'});
+
+        // validate manager
+        if(isManager(user) && !sameStore(storeId, user.storeId)) return res.status(403).json({message: 'Not authorized to update users in this store'});
+
+        // get user
+        const targetUser = await User.findById(userId);
+
+        // check if user exists
+        if(!targetUser) return res.status(404).json({message: 'User not found'});
+
+        // update user
+        const updatedUser = await User.findByIdAndUpdate(userId, {
+            name,
+            email,
+            password,
+            role,
+            storeId,
+        }, { new: true, runValidators: true });
+
+        res.status(200).json({message: 'User updated successfully'});
     } catch (error) {
         console.error(error);
         res.status(400).json({message: 'Failed to update user'});
