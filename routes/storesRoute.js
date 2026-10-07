@@ -1,7 +1,6 @@
 import { Router } from "express";
-import { createStore } from "../controllers/storeController.js";
+import { createStore, getStores, deleteStore } from "../controllers/storeController.js";
 import { protect } from "../middleware/auth.js";
-import { getStores } from "../controllers/storeController.js";
 import jurisdiction from "../middleware/jurisdiction.js";
 import { createItem, updateItem, getItem, getItems, deleteItem} from "../controllers/itemsController.js";
 import { getUsers, getUser, updateUser, deleteUser } from "../controllers/userController.js";
@@ -10,6 +9,7 @@ const router = Router();
 
 router.post('/', protect, createStore);
 router.get('/', protect, getStores);
+router.delete('/:storeId', protect, deleteStore);
 
 // Nested routes for items
 router.post('/:storeId/items', protect, jurisdiction, createItem);
