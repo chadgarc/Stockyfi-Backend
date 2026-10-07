@@ -67,7 +67,7 @@
 | Module / Action                                     |  Owner 👑  |     Manager 🧑‍💼      |    Associate 🙋     |
 | :-------------------------------------------------- | :--------: | :-----------------: | :-----------------: |
 | First-Time Setup Wizard                             |     ✅     |         ❌          |         ❌          |
-| Manage Stores (Create/Delete)                       |     ✅     |         ❌          |         ❌          |
+| Manage Stores (Create/Update/Delete)             |     ✅     |         ❌          |         ❌          |
 | View Stores                                         | All stores | Assigned store only | Assigned store only |
 | View Inventory                                      |     ✅     |         ✅          |         ✅          |
 | Create / Delete Items                               |     ✅     |         ✅          |         ❌          |
@@ -203,6 +203,27 @@
 - **Manager 🧑‍💼 / Associate 🙋:** Returns only their assigned store.
 
 **Response:** `200 OK` ✅
+
+</details>
+
+<details>
+<summary><b><code>PUT</code> /api/stores/:storeId — Update Store Location (Owner 👑)</b></summary>
+
+<br/>
+
+Full body required (`name`, `streetAddress`, `city`, `state`, `zip`):
+
+```json
+{
+  "name": "SilverMart Neighbourhood",
+  "streetAddress": "789 Pine St",
+  "city": "Fort Worth",
+  "state": "TX",
+  "zip": "76101"
+}
+```
+
+**Response:** `200 OK` ✅ (`404` if the store does not exist, `403` for non-owners).
 
 </details>
 

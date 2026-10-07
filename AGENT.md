@@ -29,6 +29,7 @@ Env: `PORT, MONGO_URI, JWT_SECRET, JWT_EXPIRE, FRONTEND_URL` (deployed SPA origi
 - `PUT /api/info` owner only.
 - `GET /api/stores` owner=all, manager/associate=own only.
 - `POST /api/stores` owner only.
+- `PUT /api/stores/:storeId` owner only (full body `name/streetAddress/city/state/zip`).
 - `DELETE /api/stores/:storeId` owner only + cascade items+staff.
 - `GET /api/stores/:storeId/items` all roles + jurisdiction check.
 - `GET /api/stores/:storeId/items?upc=` single match.
@@ -47,7 +48,7 @@ Middleware: `protect` (JWT→DB user) + `jurisdiction` (owner bypass else `store
 
 ## 6. Validation
 
-bcrypt pre-save (hash only via save(), runValidators does not hash), `inShelf<=inStock`, `inStock>=0`, central error handler, 401/403/404 consistent JSON.
+bcrypt pre-save (users hash only via save(); runValidators does not run pre-save hooks), items validate `inShelf<=inStock` and `>=0` by conditionals in the controller (no runValidators: the schema validator reads `this.inStock`, undefined on query updates), central error handler, 401/403/404 consistent JSON.
 
 ## 7. Backend Checklist
 
@@ -56,7 +57,7 @@ bcrypt pre-save (hash only via save(), runValidators does not hash), `inShelf<=i
 - [x] Middleware auth/jurisdiction (+inline owner checks)
 - [x] setup with auto-lock
 - [x] login/register with role guards
-- [x] business GET/PUT owner only (/api/info)
+- [x] business GET (all roles) / PUT owner only (/api/info)
 - [x] stores CRUD + filtered GET + cascade delete
 - [x] items nested CRUD + associate inStock/inShelf-only guard (+?upc/?all)
 - [x] users me/owners/store-staff + last-owner protection
