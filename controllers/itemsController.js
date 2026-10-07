@@ -55,7 +55,7 @@ export const updateItem = async(req, res) => {
         const userStoreId = req.user.role === ROLES.OWNER ? null : req.user.storeId.toString();
 
         // validate data
-        if(!name || !upc || !storeId || inShelf > inStock) return res.status(400).json({message: 'All fields required or invalid values'});
+        if(!name || !upc || !storeId || inShelf > inStock || inShelf < 0 || inStock < 0 ) return res.status(400).json({message: 'All fields required or invalid values'});
 
         // check if item already exists, it can use id or upc
         const item = await Item.findOne({upc, storeId});
@@ -70,10 +70,10 @@ export const updateItem = async(req, res) => {
         // associates can change inStock and inShelf value only
         if(isAssociate(req.user) && (name !== item.name || upc !== item.upc || department !== item.department)) return res.status(403).json({message: 'Not authorized to change item information'});
 
-        // NOTE: items CAN use findByIdAndUpdate+runValidators (numbers only, no hashing).
-        // Users must use save() instead (see updateUser) because runValidators
-        // does not run pre('save'): bcrypt hash, storeId=null, Store check.
-        // update item
+        // NOTE: no runValidators here: the inShelf validator uses this.inStock,
+        // which is undefined on updates (this = query, not doc) and rejects everything.
+        // Range is enforced manually above. Users must use save() (see updateUser)
+        // because validators skip pre('save'): bcrypt hash, storeId=null, Store check.
         const updatedItem = await Item.findByIdAndUpdate(itemId, {
             name,
             upc,
@@ -81,7 +81,7 @@ export const updateItem = async(req, res) => {
             inStock,
             inShelf,
             department,
-        }, { new: true, runValidators: true });
+        }, { new: true });
 
         res.status(200).json({message: `Item ${updatedItem.name} updated successfully`});
     } catch(error){
