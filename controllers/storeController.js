@@ -81,3 +81,32 @@ export const deleteStore = async (req, res) => {
         res.status(500).json({message: 'Failed to delete store'});
     }
 }
+
+export const updateStore = async (req, res) => {
+    try{
+        const user = req.user;
+        const {storeId} = req.params;
+        const {name, streetAddress, city, state, zip} = req.body;
+
+        // validate store data
+        if(!name || !streetAddress || !city || !state || !zip) return res.status(400).json({message: 'All fields required'});
+
+        // get store
+        const store = await Store.findById(storeId);
+        
+        // validate storeId
+        if(!store) return res.status(404).json({message: 'Store not found'});
+
+        // validate current user role - only owner can update stores
+        if(!isOwner(user)) return res.status(403).json({message: 'Not authorized to update stores'});
+        
+        // update
+        await store.updateOne({name, streetAddress, city, state, zip});
+
+        // verify store was updated
+        res.status(200).json({message: 'Store updated successfully'});
+    } catch(error){
+        console.error(error);
+        res.status(500).json({message: 'Failed to update store'});
+    }
+}
