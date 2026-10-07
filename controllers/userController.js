@@ -127,8 +127,7 @@ export const getUser = async (req, res) => {
         // manager scoped to own store
         if(isManager(user) && !sameStore(targetUser.storeId, user.storeId) && !isOwner(targetUser)) return res.status(403).json({message: 'Not authorized to get user'});
 
-        res.status(200).json(targetUser);
-
+        // NOTE: single response — shape is {_id, name, email, role, storeId} (password never sent).
         res.status(200).json(targetUser);
     } catch(error){
         console.error(error);

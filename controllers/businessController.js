@@ -13,9 +13,10 @@ export const getBusiness = async (req, res) => {
         // check if user role is valid
         if(!validRoles.includes(req.user.role)) return res.status(400).json({message: 'Invalid role'});
 
-        // only owner can get the business information
-        if(!isOwner(req.user)) return res.status(403).json({message: 'Not authorized to get business information'});
-        
+        // NOTE: read-only for every authenticated role (owner|manager|associate).
+        // The frontend navbar shows the business name for all roles,
+        // so GET stays behind `protect` only. Writes stay owner-only (see updateBusiness).
+
         res.status(200).json(business);
     } catch (error) {
         console.error(error);

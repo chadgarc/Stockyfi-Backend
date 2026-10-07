@@ -6,9 +6,9 @@ Build secure modular REST API for Stockify Local: closed inventory + workforce m
 
 ## 2. Stack / Structure
 
-Node+Express, Mongoose Atlas, JWT, bcrypt.
+Node+Express, Mongoose Atlas, JWT, bcrypt, cors.
 Folders: `models/ routes/ controllers/ middleware/ utils/`. Entry `server.js`.
-Env: `PORT, MONGO_URI, JWT_SECRET, JWT_EXPIRE`.
+Env: `PORT, MONGO_URI, JWT_SECRET, JWT_EXPIRE, FRONTEND_URL` (deployed SPA origin for CORS).
 
 ## 3. Models
 
@@ -25,7 +25,7 @@ Env: `PORT, MONGO_URI, JWT_SECRET, JWT_EXPIRE`.
 
 ## 5. Endpoints + RBAC
 
-- `GET /api/info` owner only — others 403, business name private.
+- `GET /api/info` all authenticated roles (navbar reads `name`; street/city/phone ignored by frontend).
 - `PUT /api/info` owner only.
 - `GET /api/stores` owner=all, manager/associate=own only.
 - `POST /api/stores` owner only.
@@ -36,7 +36,8 @@ Env: `PORT, MONGO_URI, JWT_SECRET, JWT_EXPIRE`.
 - `PUT /api/stores/:storeId/items/:itemId` owner|manager full, associate only `inStock/inShelf` else 403. Associate cannot delete.
 - `DELETE /api/stores/:storeId/items/:itemId` by ID, `?upc=` by UPC, `?all=true` all — owner|manager only.
 - `GET/PUT /api/users/me` own profile (never password; role/storeId ignored on PUT).
-- `GET /api/stores/:storeId/users` staff by store + `GET/PUT/DELETE /api/stores/:storeId/users/:userId` (manager never touches owners).
+- `GET /api/stores/:storeId/users` staff by store (owner + manager of that store via jurisdiction). Shape: array of `{_id, name, email, role, storeId}` (never password).
+- `PUT /api/stores/:storeId/users/:userId` with `{password}` is the password-update route (hashes via pre-save `save()`; manager never touches owners, last owner protected). No dedicated `/password` subroute.
 - `POST/PUT/DELETE /api/users/owners[/:id]` owner admin (owners via register only).
 - `GET/PUT/DELETE /api/users/:id` owner all, manager own store. If target is owner and `count owners<=1` → 403 last owner protected.
 

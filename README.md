@@ -311,9 +311,11 @@ Supported deletion modes:
 ### 🏢 4. Business Info
 
 <details>
-<summary><b><code>GET</code> /api/info — Fetch Business Details (Owner 👑)</b></summary>
+<summary><b><code>GET</code> /api/info — Fetch Business Details (any authenticated role 👀)</b></summary>
 
 <br/>
+
+Read-only for owner, manager and associate — the navbar shows the business `name` for every role (frontend ignores street/city/phone).
 
 **Response:** `200 OK` → `{ "name": "SilverMart HQ", "streetAddress": "...", "city": "...", "state": "...", "zip": "...", "phone": "..." }`
 
@@ -376,7 +378,7 @@ Supported deletion modes:
 
 <br/>
 
-> Allows Owners and Managers to manage workers assigned to a specific store. Managers cannot modify or remove Owner accounts.
+> Allows Owners and Managers to manage workers assigned to a specific store. Managers cannot modify or remove Owner accounts. List shape: array of `{_id, name, email, role, storeId}` (never password). "Edit Password" = `PUT` .../:userId with `{password}` — it hashes via pre-save `save()`.
 
 </details>
 
@@ -429,6 +431,8 @@ Create a `.env` file in the root directory:
 PORT=3000
 MONGO_URI=<MONGODB_URI>
 JWT_SECRET=<JWT_SECRET>
+JWT_EXPIRE=2h
+FRONTEND_URL=<FRONTEND_DEPLOY_URL> # allowed CORS origin alongside http://localhost:5173
 ```
 
 ### 3. Start Development Server
