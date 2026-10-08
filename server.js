@@ -14,7 +14,7 @@ const app = express();
 
 // CORS first so browsers accept the SPA origins (login was blocked without
 // Access-Control-Allow-Origin). FRONTEND_URL is the Render/static deploy URL.
-const allowedOrigins = ["https://chadgarc.github.io", "http://localhost:5173"].filter(Boolean);
+const allowedOrigins = ["https://stockyfi-frontend.onrender.com","https://chadgarc.github.io", "http://localhost:5173"].filter(Boolean);
 app.use(cors({
     origin: allowedOrigins,
     allowedHeaders: ["Content-Type", "Authorization"],
