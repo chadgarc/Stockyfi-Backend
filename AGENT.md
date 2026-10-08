@@ -8,7 +8,7 @@ Build secure modular REST API for Stockify Local: closed inventory + workforce m
 
 Node+Express, Mongoose Atlas, JWT, bcrypt, cors.
 Folders: `models/ routes/ controllers/ middleware/ utils/`. Entry `server.js`.
-Env: `PORT, MONGO_URI, JWT_SECRET, JWT_EXPIRE, FRONTEND_URL` (deployed SPA origin for CORS).
+Env: `PORT, MONGO_URI, JWT_SECRET, JWT_EXPIRE`. CORS origins hardcoded in `server.js` (`allowedOrigins`): `https://chadgarc.github.io`, `http://localhost:5173` — to add another, edit the array there.
 
 ## 3. Models
 

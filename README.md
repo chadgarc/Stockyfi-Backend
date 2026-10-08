@@ -453,8 +453,9 @@ PORT=3000
 MONGO_URI=<MONGODB_URI>
 JWT_SECRET=<JWT_SECRET>
 JWT_EXPIRE=2h
-FRONTEND_URL=<FRONTEND_DEPLOY_URL> # allowed CORS origin alongside http://localhost:5173
 ```
+
+> CORS origins are hardcoded in `server.js` (`allowedOrigins`): `https://chadgarc.github.io`, `http://localhost:5173`. To allow another frontend, edit that array.
 
 ### 3. Start Development Server
 
